@@ -1,0 +1,33 @@
+[project]
+name = "venvcleaner"
+dynamic = ["version"]
+description = "venv cleaner"
+readme = "README.md"
+license = "MIT"
+license-files = [ "LICENSE" ]
+authors = [
+    { name = "yamakox", email="notolog.tech@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "click>=8.3.0",
+    "wxpython>=4.2.3",
+]
+
+[project.urls]
+Homepage = "https://notolog.tech"
+Repository = "https://github.com/yamakox/VenvCleaner.git"
+Issues = "https://github.com/yamakox/VenvCleaner/issues"
+
+[project.scripts]
+venvcleaner = "venvcleaner:main"
+
+[build-system]
+requires = ["poetry-core>=2,<3", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+build-backend = "poetry_dynamic_versioning.backend"
+
+[tool.poetry]
+version = "0.0.0"
+
+[tool.poetry-dynamic-versioning]
+enable = true

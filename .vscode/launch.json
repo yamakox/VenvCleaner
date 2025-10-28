@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "debug venvcleaner",
+      "type": "debugpy",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "module": "venvcleaner",
+      "args": [
+        "/tmp/venv_cleaner_test"
+      ],
+      "console": "integratedTerminal",
+      "autoReload": {
+        "enable": false,
+        "include": [
+          "**/*.py",
+          "**/*.pyw"
+        ] 
+      },
+      "env": {
+        "DEBUG": "1"
+      },
+      "justMyCode": true
+    }
+  ]
+}
