@@ -16,7 +16,7 @@ You can also specify a target directory:
 uvx venvcleaner /path/to/target-directory
 ```
 
-![screenshot](./screenshot.png)
+![screenshot](https://raw.githubusercontent.com/yamakox/VenvCleaner/main/screenshot.png)
 
 ## Features
 
