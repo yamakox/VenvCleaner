@@ -312,6 +312,8 @@ class VenvCleanerFrame(wx.Frame):
         self.venv_list.SortItems(self.__sort_venvs)
 
     def __sort_venvs(self, item1, item2):
+        if not item1 in self.venvs_cache or not item2 in self.venvs_cache:
+            return 0
         venv_info1 = self.venvs_cache[item1]
         venv_info2 = self.venvs_cache[item2]
         if self.sort_column == 0:
