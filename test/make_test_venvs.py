@@ -28,7 +28,10 @@ for i in range(test_number):
     test_name = f'test-set-{i + 1}'
     test_path = base_path / test_name
     for j in range(len(package_list)):
-        project_name = f'example-{package_list[j]}-project'
+        if i % 2 == 1:
+            project_name = f'example {package_list[j]} project'
+        else:
+            project_name = f'example-{package_list[j]}-project'
         path = test_path / project_name
         print(f'Creating venv {path}...')
         try:
