@@ -82,7 +82,7 @@ class FindVenvsCompletedEvent(wx.ThreadEvent):
 
 class VenvCleanerFrame(wx.Frame):
     def __init__(self, dir_path):
-        super().__init__(None, title=f'venv cleaner v{version_number}', size=(800, 600))
+        super().__init__(None, title=f'venv cleaner v{version_number}', size=wx.Size(800, 600))
         self.dir_path = Path(dir_path)
 
         self.venvs_cache = {}
@@ -118,7 +118,7 @@ class VenvCleanerFrame(wx.Frame):
         dir_path_panel = self.__setup_dir_path_panel(panel)
         sizer.Add(dir_path_panel, flag=wx.EXPAND)
 
-        self.venv_list = wx.ListCtrl(panel, style=wx.LC_REPORT|wx.LC_HRULES|wx.LC_VRULES|wx.LC_SORT_ASCENDING)
+        self.venv_list = wx.ListCtrl(panel, style=wx.LC_REPORT|wx.LC_HRULES|wx.LC_VRULES)  # NOTE: wx.LC_SORT_ASCENDING affects Windows only
         self.venv_list.InsertColumn(0, 'Venv Name', width=100)
         self.venv_list.InsertColumn(1, 'Location', width=350)
         self.venv_list.InsertColumn(2, 'Size', wx.LIST_FORMAT_RIGHT, width=120)
@@ -130,8 +130,7 @@ class VenvCleanerFrame(wx.Frame):
             else:
                 self.sort_column = column
                 self.sort_ascending = True
-            self.venv_list.SortItems(self.__sort_venvs)
-            self.venv_list.ShowSortIndicator(self.sort_column, self.sort_ascending)
+            self.__sort_list_view()
         self.venv_list.Bind(wx.EVT_LIST_COL_CLICK, on_venv_list_col_click)
         sizer.Add(self.venv_list, flag=wx.EXPAND|wx.ALL, border=2)
 
@@ -230,6 +229,34 @@ class VenvCleanerFrame(wx.Frame):
         self.control_panel.SetSizer(control_sizer)
         return self.control_panel
 
+    def __sort_list_view(self):
+        self.venv_list.SortItems(self.__sort_venvs)
+        self.venv_list.ShowSortIndicator(self.sort_column, self.sort_ascending)
+
+    def __sort_venvs(self, item1, item2):
+        if not item1 in self.venvs_cache or not item2 in self.venvs_cache:
+            return 0
+        venv_info1 = self.venvs_cache[item1]
+        venv_info2 = self.venvs_cache[item2]
+        if self.sort_column == 0:
+            val1 = venv_info1['path'].name.lower()
+            val2 = venv_info2['path'].name.lower()
+        elif self.sort_column == 1:
+            val1 = str(venv_info1['path'].parent).lower()
+            val2 = str(venv_info2['path'].parent).lower()
+        elif self.sort_column == 2:
+            val1 = venv_info1['size']
+            val2 = venv_info2['size']
+        elif self.sort_column == 3:
+            val1 = venv_info1['t']
+            val2 = venv_info2['t']
+        else:
+            return 0
+        if self.sort_ascending:
+            return (val1 > val2) - (val1 < val2)
+        else:
+            return (val1 < val2) - (val1 > val2)
+
     def __set_status_text(self, text):
         self.status_text.SetLabel(text)
         self.control_panel.Layout()
@@ -278,17 +305,21 @@ class VenvCleanerFrame(wx.Frame):
 
     def __on_venv_found(self, event):
         mtime = event.venv_path.stat().st_mtime
-        self.venv_list.Append([
-            event.venv_path.name, 
-            str(event.venv_path.relative_to(self.dir_path).parent), 
-            '...', 
-            _timestamp_to_local_str(mtime),
-        ])
+        #self.venv_list.Append([
+        #    event.venv_path.name, 
+        #    str(event.venv_path.relative_to(self.dir_path).parent), 
+        #    '...', 
+        #    _timestamp_to_local_str(mtime),
+        #])
+        index = self.venv_list.InsertItem(self.venv_list.GetItemCount(), event.venv_path.name)
+        self.venv_list.SetItem(index, 1, str(event.venv_path.relative_to(self.dir_path).parent))
+        self.venv_list.SetItem(index, 2, '...')
+        self.venv_list.SetItem(index, 3, _timestamp_to_local_str(mtime))
         id = self.venv_list.GetItemCount()
         venv_info = {'path': event.venv_path, 'size': 0, 'id': id, 't': mtime}
         self.venvs_cache[id] = venv_info
         self.venvs_cache_inv[event.venv_path] = venv_info
-        self.venv_list.SetItemData(id - 1, id)
+        self.venv_list.SetItemData(index, id)
 
     def __on_venv_size_computed(self, event):
         if event.venv_path not in self.venvs_cache_inv:
@@ -300,40 +331,14 @@ class VenvCleanerFrame(wx.Frame):
             self.total_size += event.venv_size
             self.venv_list.SetItem(index, 2, _format_size(event.venv_size))
             if self.sort_column == 2:
-                self.venv_list.SortItems(self.__sort_venvs)
-                self.venv_list.ShowSortIndicator(self.sort_column, self.sort_ascending)
+                self.__sort_list_view()
             n = self.venv_list.GetItemCount()
             self.__set_status_text(f'Found {n} venvs. Total size: {_format_size(self.total_size)}')
 
     def __on_find_venvs_completed(self, event):
         n = self.venv_list.GetItemCount()
         self.__set_status_text(f'Found {n} venvs. Total size: {_format_size(self.total_size)}')
-        self.venv_list.ShowSortIndicator(self.sort_column, self.sort_ascending)
-        self.venv_list.SortItems(self.__sort_venvs)
-
-    def __sort_venvs(self, item1, item2):
-        if not item1 in self.venvs_cache or not item2 in self.venvs_cache:
-            return 0
-        venv_info1 = self.venvs_cache[item1]
-        venv_info2 = self.venvs_cache[item2]
-        if self.sort_column == 0:
-            val1 = venv_info1['path'].name.lower()
-            val2 = venv_info2['path'].name.lower()
-        elif self.sort_column == 1:
-            val1 = str(venv_info1['path'].parent).lower()
-            val2 = str(venv_info2['path'].parent).lower()
-        elif self.sort_column == 2:
-            val1 = venv_info1['size']
-            val2 = venv_info2['size']
-        elif self.sort_column == 3:
-            val1 = venv_info1['t']
-            val2 = venv_info2['t']
-        else:
-            return 0
-        if self.sort_ascending:
-            return (val1 > val2) - (val1 < val2)
-        else:
-            return (val1 < val2) - (val1 > val2)
+        self.__sort_list_view()
 
     def __copy_paths(self):
         selected_count = self.venv_list.GetSelectedItemCount()
@@ -369,6 +374,7 @@ class VenvCleanerFrame(wx.Frame):
         cleaned_count = 0
         error_count = 0
         row = 0
+        venv_path = ''
         while row < self.venv_list.GetItemCount():
             try:
                 id = self.venv_list.GetItemData(row)
