@@ -16,6 +16,26 @@ You can also specify a target directory:
 uvx venvcleaner /path/to/target-directory
 ```
 
+On [some Linux systems](https://wxpython.org/pages/downloads/index.html), Please install locally using `uv`:
+
+```bash
+mkdir -p /path/to/installation-directory
+cd /path/to/installation-directory
+uv venv
+
+# If you are using a Linux system such as Ubuntu, install wxPython first.
+uv pip install -v -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04 wxPython  # for Ubuntu 24.04
+
+uv pip install venvcleaner
+```
+
+If you installed Venv Cleaner locally, you can run it using `uv run`:
+
+```bash
+cd /path/to/installation-directory
+uv run venvcleaner [/path/to/target-directory]
+```
+
 ![screenshot](https://raw.githubusercontent.com/yamakox/VenvCleaner/main/screenshot.png)
 
 ## Features
