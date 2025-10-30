@@ -60,4 +60,4 @@ Before using this button, you must check the agreement box:
 
 ## License
 
-This software is distributed under the terms of the [MIT License](./LICENSE).
+This software is distributed under the terms of the [MIT License](https://raw.githubusercontent.com/yamakox/VenvCleaner/main/LICENSE).
