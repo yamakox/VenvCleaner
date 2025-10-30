@@ -1,21 +1,27 @@
 [project]
 name = "venvcleaner"
 dynamic = ["version"]
-description = "venv cleaner"
-readme = "README.md"
-license = "MIT"
-license-files = [ "LICENSE" ]
 authors = [
     { name = "yamakox", email="notolog.tech@gmail.com" }
 ]
+description = "A GUI tool for cleaning up Python virtual environments (venv directories)."
+readme = "README.md"
+license = "MIT"
+license-files = [ "LICENSE" ]
 requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Development Status :: 4 - Beta", 
+]
 dependencies = [
     "click>=8.3.0",
     "wxpython>=4.2.3",
 ]
 
 [project.urls]
-Homepage = "https://notolog.tech"
+Homepage = "https://github.com/yamakox/VenvCleaner"
 Repository = "https://github.com/yamakox/VenvCleaner.git"
 Issues = "https://github.com/yamakox/VenvCleaner/issues"
 
