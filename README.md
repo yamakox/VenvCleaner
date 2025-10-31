@@ -16,31 +16,33 @@ You can also specify a target directory:
 uvx venvcleaner /path/to/target-directory
 ```
 
-On [some Linux systems](https://wxpython.org/pages/downloads/index.html), Please install locally using `uv`:
+On [the Linux systems](https://wxpython.org/pages/downloads/index.html), please use the `--index` option to specify [the download URL of wxPython package](https://extras.wxpython.org/wxPython4/extras/linux/) when running it for the first time:
 
 ```bash
-mkdir -p /path/to/installation-directory
-cd /path/to/installation-directory
-uv venv
+# Ubuntu 24.04
+uvx --index https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04 venvcleaner
 
-# If you are using a Linux system such as Ubuntu, install wxPython first.
-uv pip install -v -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04 wxPython  # for Ubuntu 24.04
-
-uv pip install venvcleaner
+# Once you've downloaded wxPython, you can use the following command:
+uvx venvcleaner
 ```
 
-If you installed Venv Cleaner locally, you can run it using `uv run`:
+If you want to install to the persistent environment:
 
 ```bash
-cd /path/to/installation-directory
-uv run venvcleaner [/path/to/target-directory]
+uv tool install venvcleaner
+
+# Ubuntu 24.04
+uv tool install --index https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04 venvcleaner
+
+# run Venv Cleaner
+venvcleaner
 ```
 
 ![screenshot](https://raw.githubusercontent.com/yamakox/VenvCleaner/main/screenshot.png)
 
 ## Features
 
-- Scans the target directory for virtual environments (`.venv` folders containing a `pyvenv.cfg` file).
+- Scans the target directory for virtual environments (`.venv` directories containing a `pyvenv.cfg` file).
 - You can change or refresh the target directory with the __Select...__ or __Refresh__ buttons.
 - Choose which venvs to clean using the selection list.
   - __Select All__ selects all detected venvs.
