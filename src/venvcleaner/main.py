@@ -436,6 +436,10 @@ class VenvCleanerApp(wx.App):
 
 @click.command()
 @click.argument('dir_path', nargs=1, default='.', type=click.Path(exists=True, file_okay=False, resolve_path=True))
-def main(dir_path):
+@click.option('--version', is_flag=True, help='Show the version of Venv Cleaner.')
+def main(dir_path, version):
+    if version:
+        click.echo(f'Venv Cleaner v{version_number}')
+        return
     app = VenvCleanerApp(dir_path)
     app.MainLoop()
