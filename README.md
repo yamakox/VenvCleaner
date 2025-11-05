@@ -16,23 +16,20 @@ You can also specify a target directory:
 uvx venvcleaner /path/to/target-directory
 ```
 
-On [the Linux systems](https://wxpython.org/pages/downloads/index.html), please use the `--index` option to specify [the download URL of wxPython package](https://extras.wxpython.org/wxPython4/extras/linux/) when running it for the first time:
+On [the Linux systems](https://wxpython.org/pages/downloads/index.html), please use the `-f` (`--find-links`) option to specify [the download URL of wxPython package](https://extras.wxpython.org/wxPython4/extras/linux/):
 
 ```bash
 # for Ubuntu 24.04
-uvx --index https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04 venvcleaner
-
-# Once you've downloaded wxPython, you can use the following command:
-uvx venvcleaner
+uvx -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04 venvcleaner
 ```
 
 If you want to install to the persistent environment:
 
 ```bash
-uv tool install venvcleaner
+uv tool install venvcleaner@latest
 
 # for Ubuntu 24.04
-uv tool install --index https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04 venvcleaner
+uv tool install -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04 venvcleaner@latest
 
 # run Venv Cleaner
 venvcleaner
