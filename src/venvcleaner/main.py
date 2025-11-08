@@ -356,6 +356,7 @@ class VenvCleanerFrame(wx.Frame):
                 paths.append(_quote_path(venv_info['path']))
         if wx.TheClipboard.Open():
             wx.TheClipboard.SetData(wx.TextDataObject(' '.join(paths)))
+            wx.TheClipboard.Flush()
             wx.TheClipboard.Close()
             wx.MessageBox(f'{len(paths)} venv path(s) have been copied to the clipboard.', 'Success', wx.OK|wx.ICON_INFORMATION)
         else:
