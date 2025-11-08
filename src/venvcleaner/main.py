@@ -83,6 +83,9 @@ class FindVenvsCompletedEvent(wx.ThreadEvent):
 class VenvCleanerFrame(wx.Frame):
     def __init__(self, dir_path):
         super().__init__(None, title=f'venv cleaner v{version_number}', size=wx.Size(800, 600))
+        if sys.platform == 'win32':
+            self.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_3DFACE))
+
         self.dir_path = Path(dir_path)
 
         self.venvs_cache = {}
