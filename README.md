@@ -4,7 +4,7 @@ A simple GUI tool for cleaning up old or unused Python virtual environments (`ve
 
 ## How to Use
 
-The easiest way to run Venv Cleaner is with [uvx](https://docs.astral.sh/uv/guides/tools/):
+The easiest way to run Venv Cleaner is using [uvx](https://docs.astral.sh/uv/guides/tools/):
 
 ```bash
 uvx venvcleaner
@@ -16,7 +16,9 @@ You can also specify a target directory:
 uvx venvcleaner /path/to/target-directory
 ```
 
-On [the Linux systems](https://wxpython.org/pages/downloads/index.html), please use the `-f` (`--find-links`) option to specify [the download URL of wxPython package](https://extras.wxpython.org/wxPython4/extras/linux/):
+If you are using Linux, you will need to build wxPython via pip. Please see [Building wxPython for Linux via Pip](https://wxpython.org/blog/2017-08-17-builds-for-linux-with-pip/) and [wxWidgets for GTK installation](https://docs.wxwidgets.org/3.2/plat_gtk_install.html).
+
+Alternatively, on [some Linux systems](https://wxpython.org/pages/downloads/index.html), you can use the `-f` (`--find-links`) option to specify [the download URL of wxPython package](https://extras.wxpython.org/wxPython4/extras/linux/):
 
 ```bash
 # for Ubuntu 24.04
