@@ -426,15 +426,15 @@ class VenvCleanerFrame(wx.Frame):
 
 class VenvCleanerApp(wx.App):
     def __init__(self, dir_path):
+        self.dir_path = Path(dir_path)
         super().__init__()
 
-        lang_code = wx.Locale().GetSystemLanguage()
-        locale = wx.Locale(lang_code)
-
-        self.dir_path = Path(dir_path)
+    def OnInit(self):
+        self.locale = wx.Locale(wx.LANGUAGE_DEFAULT)
         self.frame = VenvCleanerFrame(self.dir_path)
         self.frame.Show()
         self.frame.venv_list.SetFocus()
+        return True
 
 # MARK: Main Function
 
