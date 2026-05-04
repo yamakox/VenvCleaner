@@ -1,4 +1,3 @@
-from typing import Any
 import click
 from pathlib import Path
 import shutil
@@ -155,7 +154,7 @@ class VenvCleanerFrame(wx.Frame):
 
         dir_path_button = wx.Button(panel, label='Select...')
         def on_dir_path_button_click(event):
-            dialog = wx.DirDialog(self, 'Please select a directory.', style=wx.DD_DEFAULT_STYLE|wx.DD_DIR_MUST_EXIST)
+            dialog = wx.DirDialog(self, 'Please select a directory.', defaultPath=str(self.dir_path), style=wx.DD_DEFAULT_STYLE|wx.DD_DIR_MUST_EXIST)
             if dialog.ShowModal() == wx.ID_OK:
                 self.dir_path = Path(dialog.GetPath())
                 self.dir_path_input.SetValue(str(self.dir_path))
@@ -237,7 +236,7 @@ class VenvCleanerFrame(wx.Frame):
         self.venv_list.ShowSortIndicator(self.sort_column, self.sort_ascending)
 
     def __sort_venvs(self, item1, item2):
-        if not item1 in self.venvs_cache or not item2 in self.venvs_cache:
+        if item1 not in self.venvs_cache or item2 not in self.venvs_cache:
             return 0
         venv_info1 = self.venvs_cache[item1]
         venv_info2 = self.venvs_cache[item2]
