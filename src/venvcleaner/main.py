@@ -9,30 +9,29 @@ import wx
 import threading
 from importlib.metadata import version, metadata
 
-package_name = metadata(__package__).get('Name') # type: ignore
+package_name = metadata(__package__).get('Name')  # type: ignore
 version_number = version(package_name)
 
 # MARK: logger "venvcleaner"
-
-logger: logging.Logger|None = logging.getLogger('venvcleaner')
+logger: logging.Logger | None = logging.getLogger('venvcleaner')
 debug = os.environ.get('DEBUG')
 logger.setLevel(logging.DEBUG if debug else logging.INFO)
 logging.basicConfig(
-    format="%(asctime)s [%(levelname)s] %(message)s", 
+    format='%(asctime)s [%(levelname)s] %(message)s',
 )
 
 # MARK: Constants
-
 GLOB_PATTERN = 'pyvenv.cfg'
 
-# MARK subroutines
 
+# MARK subroutines
 def _compute_dir_size(dir_path):
     dir_size = 0
     for path in dir_path.rglob('*'):
         if path.is_file():
             dir_size += path.stat().st_size
     return dir_size
+
 
 def _format_size(size):
     if size < 1024:
@@ -44,25 +43,30 @@ def _format_size(size):
     else:
         return f'{size / 1024 / 1024 / 1024:.2f} GB'
 
+
 def _timestamp_to_local_str(timestamp):
     return str(datetime.fromtimestamp(int(timestamp)))
+
 
 def _quote_path(path):
     _path = str(path)
     return f'"{_path}"' if ' ' in _path else _path
 
-# MARK: Events
 
+# MARK: Events
 myEVT_VENV_FOUND = wx.NewEventType()
 EVT_VENV_FOUND = wx.PyEventBinder(myEVT_VENV_FOUND)
+
 
 class VenvFoundEvent(wx.ThreadEvent):
     def __init__(self, venv_path):
         super().__init__(myEVT_VENV_FOUND)
         self.venv_path = venv_path
 
+
 myEVT_VENV_SIZE_COMPUTED = wx.NewEventType()
 EVT_VENV_SIZE_COMPUTED = wx.PyEventBinder(myEVT_VENV_SIZE_COMPUTED)
+
 
 class VenvSizeComputedEvent(wx.ThreadEvent):
     def __init__(self, venv_path, venv_size):
@@ -70,15 +74,17 @@ class VenvSizeComputedEvent(wx.ThreadEvent):
         self.venv_path = venv_path
         self.venv_size = venv_size
 
+
 myEVT_FIND_VENVS_COMPLETED = wx.NewEventType()
 EVT_FIND_VENVS_COMPLETED = wx.PyEventBinder(myEVT_FIND_VENVS_COMPLETED)
+
 
 class FindVenvsCompletedEvent(wx.ThreadEvent):
     def __init__(self):
         super().__init__(myEVT_FIND_VENVS_COMPLETED)
 
-# MARK: Main Frame
 
+# MARK: Main Frame
 class VenvCleanerFrame(wx.Frame):
     def __init__(self, dir_path):
         super().__init__(None, title=f'venv cleaner v{version_number}', size=wx.Size(800, 600))
@@ -106,7 +112,7 @@ class VenvCleanerFrame(wx.Frame):
             menu_bar.Append(file_menu, 'File')
             self.SetMenuBar(menu_bar)
             self.Bind(wx.EVT_MENU, self.__on_close_menu, file_menu_close)
-        
+
         self.__setup_main_panel()
         self.__start_find_venvs_thread()
 
@@ -120,11 +126,14 @@ class VenvCleanerFrame(wx.Frame):
         dir_path_panel = self.__setup_dir_path_panel(panel)
         sizer.Add(dir_path_panel, flag=wx.EXPAND)
 
-        self.venv_list = wx.ListCtrl(panel, style=wx.LC_REPORT|wx.LC_HRULES|wx.LC_VRULES)  # NOTE: wx.LC_SORT_ASCENDING affects Windows only
+        self.venv_list = wx.ListCtrl(
+            panel, style=wx.LC_REPORT | wx.LC_HRULES | wx.LC_VRULES
+        )  # NOTE: wx.LC_SORT_ASCENDING affects Windows only
         self.venv_list.InsertColumn(0, 'Venv Name', width=100)
         self.venv_list.InsertColumn(1, 'Location', width=350)
         self.venv_list.InsertColumn(2, 'Size', wx.LIST_FORMAT_RIGHT, width=120)
         self.venv_list.InsertColumn(3, 'Last Modified', width=180)
+
         def on_venv_list_col_click(event):
             column = event.GetColumn()
             if column == self.sort_column:
@@ -133,15 +142,16 @@ class VenvCleanerFrame(wx.Frame):
                 self.sort_column = column
                 self.sort_ascending = True
             self.__sort_list_view()
+
         self.venv_list.Bind(wx.EVT_LIST_COL_CLICK, on_venv_list_col_click)
-        sizer.Add(self.venv_list, flag=wx.EXPAND|wx.ALL, border=2)
+        sizer.Add(self.venv_list, flag=wx.EXPAND | wx.ALL, border=2)
 
         control_panel = self.__setup_control_panel(panel)
         sizer.Add(control_panel, flag=wx.EXPAND)
 
         panel.SetSizer(sizer)
         self.SetSizer(frame_sizer)
-        frame_sizer.Add(panel, flag=wx.EXPAND|wx.ALL, border=8)
+        frame_sizer.Add(panel, flag=wx.EXPAND | wx.ALL, border=8)
 
     def __setup_dir_path_panel(self, parent_panel):
         panel = wx.Panel(parent_panel)
@@ -150,23 +160,32 @@ class VenvCleanerFrame(wx.Frame):
 
         self.dir_path_input = wx.TextCtrl(panel, style=wx.TE_READONLY)
         self.dir_path_input.SetValue(str(self.dir_path))
-        sizer.Add(self.dir_path_input, flag=wx.EXPAND|wx.ALL, border=2)
+        sizer.Add(self.dir_path_input, flag=wx.EXPAND | wx.ALL, border=2)
 
         dir_path_button = wx.Button(panel, label='Select...')
+
         def on_dir_path_button_click(event):
-            dialog = wx.DirDialog(self, 'Please select a directory.', defaultPath=str(self.dir_path), style=wx.DD_DEFAULT_STYLE|wx.DD_DIR_MUST_EXIST)
+            dialog = wx.DirDialog(
+                self,
+                'Please select a directory.',
+                defaultPath=str(self.dir_path),
+                style=wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST,
+            )
             if dialog.ShowModal() == wx.ID_OK:
                 self.dir_path = Path(dialog.GetPath())
                 self.dir_path_input.SetValue(str(self.dir_path))
                 self.__start_find_venvs_thread()
+
         dir_path_button.Bind(wx.EVT_BUTTON, on_dir_path_button_click)
-        sizer.Add(dir_path_button, flag=wx.EXPAND|wx.ALL, border=2)
+        sizer.Add(dir_path_button, flag=wx.EXPAND | wx.ALL, border=2)
 
         refresh_button = wx.Button(panel, label='Refresh')
+
         def on_refresh_button_click(event):
             self.__start_find_venvs_thread()
+
         refresh_button.Bind(wx.EVT_BUTTON, on_refresh_button_click)
-        sizer.Add(refresh_button, flag=wx.EXPAND|wx.ALL, border=2)
+        sizer.Add(refresh_button, flag=wx.EXPAND | wx.ALL, border=2)
 
         panel.SetSizer(sizer)
         return panel
@@ -181,27 +200,33 @@ class VenvCleanerFrame(wx.Frame):
         first_sizer.AddGrowableCol(2)
 
         select_all_button = wx.Button(first_panel, label='Select All')
+
         def on_select_all_button_click(event):
             for row in range(self.venv_list.GetItemCount()):
                 self.venv_list.Select(row, on=True)
+
         select_all_button.Bind(wx.EVT_BUTTON, on_select_all_button_click)
-        first_sizer.Add(select_all_button, flag=wx.EXPAND|wx.ALL, border=2)
+        first_sizer.Add(select_all_button, flag=wx.EXPAND | wx.ALL, border=2)
 
         select_none_button = wx.Button(first_panel, label='Select None')
+
         def on_select_none_button_click(event):
             for row in range(self.venv_list.GetItemCount()):
                 self.venv_list.Select(row, on=False)
+
         select_none_button.Bind(wx.EVT_BUTTON, on_select_none_button_click)
-        first_sizer.Add(select_none_button, flag=wx.EXPAND|wx.ALL, border=2)
+        first_sizer.Add(select_none_button, flag=wx.EXPAND | wx.ALL, border=2)
 
         self.status_text = wx.StaticText(first_panel, label='', style=wx.ALIGN_CENTER_HORIZONTAL)
-        first_sizer.Add(self.status_text, flag=wx.EXPAND|wx.ALL, border=2)
+        first_sizer.Add(self.status_text, flag=wx.EXPAND | wx.ALL, border=2)
 
         copy_button = wx.Button(first_panel, label='Copy Paths')
+
         def on_copy_button_click(event):
             self.__copy_paths()
+
         copy_button.Bind(wx.EVT_BUTTON, on_copy_button_click)
-        first_sizer.Add(copy_button, flag=wx.EXPAND|wx.ALL, border=2)
+        first_sizer.Add(copy_button, flag=wx.EXPAND | wx.ALL, border=2)
 
         first_panel.SetSizer(first_sizer)
         control_sizer.Add(first_panel, flag=wx.EXPAND)
@@ -212,20 +237,23 @@ class VenvCleanerFrame(wx.Frame):
         second_sizer.AddStretchSpacer(1)
 
         agree_checkbox = wx.CheckBox(second_panel, label='I agree to take responsibility for my actions.')
-        second_sizer.Add(agree_checkbox, flag=wx.EXPAND|wx.ALL, border=2)
+        second_sizer.Add(agree_checkbox, flag=wx.EXPAND | wx.ALL, border=2)
 
         clean_button = wx.Button(second_panel, label='Cleanup Venvs')
         clean_button.Enable(agree_checkbox.IsChecked())
+
         def on_clean_button_click(event):
             self.__clean_venvs()
+
         clean_button.Bind(wx.EVT_BUTTON, on_clean_button_click)
-        second_sizer.Add(clean_button, flag=wx.EXPAND|wx.ALL, border=2)
+        second_sizer.Add(clean_button, flag=wx.EXPAND | wx.ALL, border=2)
 
         second_panel.SetSizer(second_sizer)
         control_sizer.Add(second_panel, flag=wx.EXPAND)
 
         def on_agree_checkbox_click(event):
             clean_button.Enable(event.IsChecked())
+
         agree_checkbox.Bind(wx.EVT_CHECKBOX, on_agree_checkbox_click)
 
         self.control_panel.SetSizer(control_sizer)
@@ -272,7 +300,7 @@ class VenvCleanerFrame(wx.Frame):
         self.__set_status_text('Finding venvs...')
         self.find_venvs_thread = threading.Thread(
             target=self.__find_venvs_worker,
-            args=(self.dir_path,), 
+            args=(self.dir_path,),
             daemon=True,
         )
         self.find_venvs_thread.start()
@@ -307,12 +335,12 @@ class VenvCleanerFrame(wx.Frame):
 
     def __on_venv_found(self, event):
         mtime = event.venv_path.stat().st_mtime
-        #self.venv_list.Append([
-        #    event.venv_path.name, 
-        #    str(event.venv_path.relative_to(self.dir_path).parent), 
-        #    '...', 
-        #    _timestamp_to_local_str(mtime),
-        #])
+        # self.venv_list.Append([
+        #     event.venv_path.name,
+        #     str(event.venv_path.relative_to(self.dir_path).parent),
+        #     '...',
+        #     _timestamp_to_local_str(mtime),
+        # ])
         index = self.venv_list.InsertItem(self.venv_list.GetItemCount(), event.venv_path.name)
         self.venv_list.SetItem(index, 1, str(event.venv_path.relative_to(self.dir_path).parent))
         self.venv_list.SetItem(index, 2, '...')
@@ -345,7 +373,7 @@ class VenvCleanerFrame(wx.Frame):
     def __copy_paths(self):
         selected_count = self.venv_list.GetSelectedItemCount()
         if selected_count == 0:
-            wx.MessageBox('Please select at least one venv to copy the paths.', 'Warning', wx.OK|wx.ICON_WARNING)
+            wx.MessageBox('Please select at least one venv to copy the paths.', 'Warning', wx.OK | wx.ICON_WARNING)
             return
         paths = []
         for row in range(self.venv_list.GetItemCount()):
@@ -357,19 +385,21 @@ class VenvCleanerFrame(wx.Frame):
             wx.TheClipboard.SetData(wx.TextDataObject(' '.join(paths)))
             wx.TheClipboard.Flush()
             wx.TheClipboard.Close()
-            wx.MessageBox(f'{len(paths)} venv path(s) have been copied to the clipboard.', 'Success', wx.OK|wx.ICON_INFORMATION)
+            wx.MessageBox(
+                f'{len(paths)} venv path(s) have been copied to the clipboard.', 'Success', wx.OK | wx.ICON_INFORMATION
+            )
         else:
-            wx.MessageBox('Failed to open the clipboard. Please try again.', 'Error', wx.OK|wx.ICON_ERROR)
+            wx.MessageBox('Failed to open the clipboard. Please try again.', 'Error', wx.OK | wx.ICON_ERROR)
 
     def __clean_venvs(self):
         selected_count = self.venv_list.GetSelectedItemCount()
         if selected_count == 0:
-            wx.MessageBox('Please select at least one venv to clean up.', 'Warning', wx.OK|wx.ICON_WARNING)
+            wx.MessageBox('Please select at least one venv to clean up.', 'Warning', wx.OK | wx.ICON_WARNING)
             return
         answer = wx.MessageBox(
-            f'Are you sure you want to clean up {selected_count} venv(s)?', 
-            'Confirm', 
-            wx.OK|wx.CANCEL|wx.CANCEL_DEFAULT|wx.ICON_QUESTION
+            f'Are you sure you want to clean up {selected_count} venv(s)?',
+            'Confirm',
+            wx.OK | wx.CANCEL | wx.CANCEL_DEFAULT | wx.ICON_QUESTION,
         )
         if answer != wx.OK:
             return
@@ -402,16 +432,12 @@ class VenvCleanerFrame(wx.Frame):
                 (
                     f'Failed to clean up {error_count} of {cleaned_count + error_count} venv(s). '
                     'Please check the permissions and try again.'
-                ), 
+                ),
                 'Error',
-                wx.OK|wx.ICON_ERROR
+                wx.OK | wx.ICON_ERROR,
             )
         else:
-            wx.MessageBox(
-                f'Cleaned up {cleaned_count} venv(s).',
-                'Success',
-                wx.OK|wx.ICON_INFORMATION
-            )
+            wx.MessageBox(f'Cleaned up {cleaned_count} venv(s).', 'Success', wx.OK | wx.ICON_INFORMATION)
 
     def __on_close_menu(self, event):
         self.Close()
@@ -421,8 +447,8 @@ class VenvCleanerFrame(wx.Frame):
         self.__ensure_stop_thread()
         event.Skip()
 
-# MARK: Main App
 
+# MARK: Main App
 class VenvCleanerApp(wx.App):
     def __init__(self, dir_path):
         self.dir_path = Path(dir_path)
@@ -435,8 +461,8 @@ class VenvCleanerApp(wx.App):
         self.frame.venv_list.SetFocus()
         return True
 
-# MARK: Main Function
 
+# MARK: Main Function
 @click.command()
 @click.argument('dir_path', nargs=1, default='.', type=click.Path(exists=True, file_okay=False, resolve_path=True))
 @click.option('--version', is_flag=True, help='Show the version of Venv Cleaner.')

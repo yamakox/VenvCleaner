@@ -15,7 +15,7 @@ package_list = [
     'tensorflow',
     'wxPython',
 ]
-test_number = 5     # 0 is for removing all test venvs
+test_number = 5  # 0 is for removing all test venvs
 
 base_path = Path('/tmp/venv_cleaner_test')
 print(f'Removing {base_path}...')
@@ -37,7 +37,7 @@ for i in range(test_number):
         try:
             path.mkdir(parents=True)
             subprocess.run(['uv', 'init'], cwd=path, env=env)
-            subprocess.run(['uv', 'add'] + package_list[:j + 1], cwd=path, env=env)
+            subprocess.run(['uv', 'add'] + package_list[: j + 1], cwd=path, env=env)
         except Exception as e:
             print(f'Error creating venv {path}: {e}')
 
