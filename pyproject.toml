@@ -17,16 +17,20 @@ classifiers = [
 ]
 dependencies = [
     "click>=8.3.0",
+]
+
+[project.optional-dependencies]
+gui = [
     "wxpython>=4.2.1",
 ]
+
+[project.scripts]
+venvcleaner = "venvcleaner:main"
 
 [project.urls]
 Homepage = "https://github.com/yamakox/VenvCleaner"
 Repository = "https://github.com/yamakox/VenvCleaner.git"
 Issues = "https://github.com/yamakox/VenvCleaner/issues"
-
-[project.scripts]
-venvcleaner = "venvcleaner:main"
 
 [build-system]
 requires = ["poetry-core>=2,<3", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]

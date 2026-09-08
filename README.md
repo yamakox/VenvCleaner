@@ -1,16 +1,22 @@
 # Venv Cleaner
 
-A simple GUI tool for cleaning up old or unused Python virtual environments (`venv` directories).
+A simple TUI/GUI tool for cleaning up old or unused Python virtual environments (`venv` directories).
 
 ## How to Use
 
-The easiest way to run Venv Cleaner is using [uvx](https://docs.astral.sh/uv/guides/tools/):
+The easiest way to run TUI mode of Venv Cleaner is using [uvx](https://docs.astral.sh/uv/guides/tools/):
 
 ```bash
 uvx venvcleaner
 ```
 
-You can also specify a target directory:
+You can also run GUI mode of Venv Cleaner:
+
+```bash
+uvx venvcleaner[gui]
+```
+
+You can specify a target directory:
 
 ```bash
 uvx venvcleaner /path/to/target-directory
