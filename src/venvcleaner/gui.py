@@ -1,54 +1,18 @@
-import click
 from pathlib import Path
 import shutil
 import sys
-import logging
-import os
-from datetime import datetime
 import wx
 import threading
-from .version import version_number
-
-# MARK: logger "venvcleaner"
-logger: logging.Logger | None = logging.getLogger('venvcleaner')
-debug = os.environ.get('DEBUG')
-logger.setLevel(logging.DEBUG if debug else logging.INFO)
-logging.basicConfig(
-    format='%(asctime)s [%(levelname)s] %(message)s',
+from .core import (
+    compare_venvs,
+    find_venvs_worker,
+    format_size,
+    format_status_text,
+    logger,
+    quote_path,
+    timestamp_to_local_str,
 )
-
-# MARK: Constants
-GLOB_PATTERN = 'pyvenv.cfg'
-
-
-# MARK subroutines
-def _compute_dir_size(dir_path):
-    dir_size = 0
-    for path in dir_path.rglob('*'):
-        if path.is_file():
-            dir_size += path.stat().st_size
-    return dir_size
-
-
-def _format_size(size):
-    if size < 1024:
-        return f'{size} B'
-    elif size < 1024 * 1024:
-        return f'{size / 1024:.2f} KB'
-    elif size < 1024 * 1024 * 1024:
-        return f'{size / 1024 / 1024:.2f} MB'
-    else:
-        return f'{size / 1024 / 1024 / 1024:.2f} GB'
-
-
-def _timestamp_to_local_str(timestamp):
-    return str(datetime.fromtimestamp(int(timestamp)))
-
-
-def _quote_path(path):
-    _path = str(path)
-    return f'"{_path}"' if ' ' in _path else _path
-
+from .version import version_number
 
 # MARK: Events
 myEVT_VENV_FOUND = wx.NewEventType()
@@ -263,26 +227,12 @@ class VenvCleanerFrame(wx.Frame):
     def __sort_venvs(self, item1, item2):
         if item1 not in self.venvs_cache or item2 not in self.venvs_cache:
             return 0
-        venv_info1 = self.venvs_cache[item1]
-        venv_info2 = self.venvs_cache[item2]
-        if self.sort_column == 0:
-            val1 = venv_info1['path'].name.lower()
-            val2 = venv_info2['path'].name.lower()
-        elif self.sort_column == 1:
-            val1 = str(venv_info1['path'].parent).lower()
-            val2 = str(venv_info2['path'].parent).lower()
-        elif self.sort_column == 2:
-            val1 = venv_info1['size']
-            val2 = venv_info2['size']
-        elif self.sort_column == 3:
-            val1 = venv_info1['t']
-            val2 = venv_info2['t']
-        else:
-            return 0
-        if self.sort_ascending:
-            return (val1 > val2) - (val1 < val2)
-        else:
-            return (val1 < val2) - (val1 > val2)
+        return compare_venvs(
+            self.venvs_cache[item1],
+            self.venvs_cache[item2],
+            self.sort_column,
+            self.sort_ascending,
+        )
 
     def __set_status_text(self, text):
         self.status_text.SetLabel(text)
@@ -309,39 +259,36 @@ class VenvCleanerFrame(wx.Frame):
             th.join()
 
     def __find_venvs_worker(self, dir_path):
-        venv_paths = []
+        frame = self
+
+        class Callbacks:
+            @staticmethod
+            def on_venv_found(venv_path):
+                wx.QueueEvent(frame, VenvFoundEvent(venv_path))
+
+            @staticmethod
+            def on_venv_size_computed(venv_path, venv_size):
+                wx.QueueEvent(frame, VenvSizeComputedEvent(venv_path, venv_size))
+
+            @staticmethod
+            def on_find_venvs_completed():
+                wx.QueueEvent(frame, FindVenvsCompletedEvent())
+
+            @staticmethod
+            def should_stop():
+                return frame.find_venvs_thread is None
+
         try:
-            for path in dir_path.rglob(GLOB_PATTERN):
-                if self.find_venvs_thread is None:
-                    return
-                if path.is_file():
-                    venv_path = path.parent
-                    venv_paths.append(venv_path)
-                    wx.QueueEvent(self, VenvFoundEvent(venv_path))
-            wx.QueueEvent(self, FindVenvsCompletedEvent())
-            for venv_path in venv_paths:
-                if self.find_venvs_thread is None:
-                    return
-                venv_size = _compute_dir_size(venv_path)
-                wx.QueueEvent(self, VenvSizeComputedEvent(venv_path, venv_size))
-        except Exception as e:
-            logger.error(f'Failed to find venvs: {e}')
-            wx.QueueEvent(self, FindVenvsCompletedEvent())
+            find_venvs_worker(dir_path, Callbacks)
         finally:
-            self.find_venvs_thread = None
+            frame.find_venvs_thread = None
 
     def __on_venv_found(self, event):
         mtime = event.venv_path.stat().st_mtime
-        # self.venv_list.Append([
-        #     event.venv_path.name,
-        #     str(event.venv_path.relative_to(self.dir_path).parent),
-        #     '...',
-        #     _timestamp_to_local_str(mtime),
-        # ])
         index = self.venv_list.InsertItem(self.venv_list.GetItemCount(), event.venv_path.name)
         self.venv_list.SetItem(index, 1, str(event.venv_path.relative_to(self.dir_path).parent))
         self.venv_list.SetItem(index, 2, '...')
-        self.venv_list.SetItem(index, 3, _timestamp_to_local_str(mtime))
+        self.venv_list.SetItem(index, 3, timestamp_to_local_str(mtime))
         id = self.venv_list.GetItemCount()
         venv_info = {'path': event.venv_path, 'size': 0, 'id': id, 't': mtime}
         self.venvs_cache[id] = venv_info
@@ -356,15 +303,15 @@ class VenvCleanerFrame(wx.Frame):
         if index >= 0:
             venv_info['size'] = event.venv_size
             self.total_size += event.venv_size
-            self.venv_list.SetItem(index, 2, _format_size(event.venv_size))
+            self.venv_list.SetItem(index, 2, format_size(event.venv_size))
             if self.sort_column == 2:
                 self.__sort_list_view()
             n = self.venv_list.GetItemCount()
-            self.__set_status_text(f'Found {n} venvs. Total size: {_format_size(self.total_size)}')
+            self.__set_status_text(format_status_text(n, self.total_size))
 
     def __on_find_venvs_completed(self, event):
         n = self.venv_list.GetItemCount()
-        self.__set_status_text(f'Found {n} venvs. Total size: {_format_size(self.total_size)}')
+        self.__set_status_text(format_status_text(n, self.total_size))
         self.__sort_list_view()
 
     def __copy_paths(self):
@@ -377,7 +324,7 @@ class VenvCleanerFrame(wx.Frame):
             if self.venv_list.IsSelected(row):
                 id = self.venv_list.GetItemData(row)
                 venv_info = self.venvs_cache[id]
-                paths.append(_quote_path(venv_info['path']))
+                paths.append(quote_path(venv_info['path']))
         if wx.TheClipboard.Open():
             wx.TheClipboard.SetData(wx.TextDataObject(' '.join(paths)))
             wx.TheClipboard.Flush()
@@ -422,7 +369,7 @@ class VenvCleanerFrame(wx.Frame):
                 logger.error(f'Failed to clean up: {venv_path}')
             row += 1
         n = self.venv_list.GetItemCount()
-        self.__set_status_text(f'{n} venv(s) remaining. Total size: {_format_size(self.total_size)}')
+        self.__set_status_text(f'{n} venv(s) remaining. Total size: {format_size(self.total_size)}')
         self.venv_list.Update()
         if error_count > 0:
             wx.MessageBox(

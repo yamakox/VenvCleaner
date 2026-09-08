@@ -48,7 +48,8 @@ venvcleaner
 ## Features
 
 - Scans the target directory for virtual environments (`.venv` directories containing a `pyvenv.cfg` file).
-- You can change or refresh the target directory with the __Select...__ or __Refresh__ buttons.
+- In TUI mode, you can change the target directory by editing the path field and pressing Enter, or refresh the scan with the __Refresh__ button.
+- In GUI mode, you can change or refresh the target directory with the __Select...__ or __Refresh__ buttons.
 - Choose which venvs to clean using the selection list.
   - __Select All__ selects all detected venvs.
   - __Select None__ clears the selection.
@@ -64,6 +65,22 @@ rm -r /path/to/project-1/.venv "/path/to/project 2/.venv"
 Before using this button, you must check the agreement box:
 
 > I agree to take responsibility for my actions.
+
+## TUI Key Bindings
+
+| Key | Action |
+|---|---|
+| `↑` / `↓` | Move within the venv list |
+| `Space` | Toggle selection of the current row |
+| `Tab` / `Shift+Tab` | Move focus between widgets |
+| `Enter` | Activate the focused button / confirm path input |
+| `a` | Select All |
+| `n` | Select None |
+| `r` | Refresh |
+| `c` | Copy Paths |
+| `Esc` / `q` | Quit |
+
+In modal dialogs, press `y` / `n` to confirm or cancel, or use the buttons.
 
 ## License
 
