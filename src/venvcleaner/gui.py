@@ -49,6 +49,7 @@ class FindVenvsCompletedEvent(wx.ThreadEvent):
 class VenvCleanerFrame(wx.Frame):
     def __init__(self, dir_path):
         super().__init__(None, title=f'venv cleaner v{version_number}', size=wx.Size(800, 600))
+        self.SetMinSize(wx.Size(640, 360))
         if sys.platform == 'win32':
             self.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_3DFACE))
 
@@ -157,51 +158,48 @@ class VenvCleanerFrame(wx.Frame):
         control_sizer.AddGrowableCol(0)
 
         first_panel = wx.Panel(self.control_panel)
-        first_sizer = wx.FlexGridSizer(rows=1, cols=4, gap=wx.Size(4, 4))
-        first_sizer.AddGrowableCol(2)
+        first_sizer = wx.FlexGridSizer(rows=1, cols=1, gap=wx.Size(4, 4))
+        first_sizer.AddGrowableCol(0)
 
-        select_all_button = wx.Button(first_panel, label='Select All')
+        self.status_text = wx.StaticText(first_panel, label='', style=wx.ALIGN_CENTER_HORIZONTAL)
+        first_sizer.Add(self.status_text, flag=wx.EXPAND | wx.ALL, border=2)
+
+        first_panel.SetSizer(first_sizer)
+        control_sizer.Add(first_panel, flag=wx.EXPAND)
+
+        second_panel = wx.Panel(self.control_panel)
+        second_sizer = wx.FlexGridSizer(rows=1, cols=5, gap=wx.Size(4, 4))
+        second_sizer.AddGrowableCol(2)
+
+        select_all_button = wx.Button(second_panel, label='Select All')
 
         def on_select_all_button_click(event):
             for row in range(self.venv_list.GetItemCount()):
                 self.venv_list.Select(row, on=True)
 
         select_all_button.Bind(wx.EVT_BUTTON, on_select_all_button_click)
-        first_sizer.Add(select_all_button, flag=wx.EXPAND | wx.ALL, border=2)
+        second_sizer.Add(select_all_button, flag=wx.EXPAND | wx.ALL, border=2)
 
-        select_none_button = wx.Button(first_panel, label='Select None')
+        select_none_button = wx.Button(second_panel, label='Select None')
 
         def on_select_none_button_click(event):
             for row in range(self.venv_list.GetItemCount()):
                 self.venv_list.Select(row, on=False)
 
         select_none_button.Bind(wx.EVT_BUTTON, on_select_none_button_click)
-        first_sizer.Add(select_none_button, flag=wx.EXPAND | wx.ALL, border=2)
+        second_sizer.Add(select_none_button, flag=wx.EXPAND | wx.ALL, border=2)
 
-        self.status_text = wx.StaticText(first_panel, label='', style=wx.ALIGN_CENTER_HORIZONTAL)
-        first_sizer.Add(self.status_text, flag=wx.EXPAND | wx.ALL, border=2)
+        second_sizer.AddStretchSpacer(1)
 
-        copy_button = wx.Button(first_panel, label='Copy Paths')
+        copy_button = wx.Button(second_panel, label='Copy Paths')
 
         def on_copy_button_click(event):
             self.__copy_paths()
 
         copy_button.Bind(wx.EVT_BUTTON, on_copy_button_click)
-        first_sizer.Add(copy_button, flag=wx.EXPAND | wx.ALL, border=2)
+        second_sizer.Add(copy_button, flag=wx.EXPAND | wx.ALL, border=2)
 
-        first_panel.SetSizer(first_sizer)
-        control_sizer.Add(first_panel, flag=wx.EXPAND)
-
-        second_panel = wx.Panel(self.control_panel)
-        second_sizer = wx.FlexGridSizer(rows=1, cols=3, gap=wx.Size(4, 4))
-        second_sizer.AddGrowableCol(0)
-        second_sizer.AddStretchSpacer(1)
-
-        agree_checkbox = wx.CheckBox(second_panel, label='I agree to take responsibility for my actions.')
-        second_sizer.Add(agree_checkbox, flag=wx.EXPAND | wx.ALL, border=2)
-
-        clean_button = wx.Button(second_panel, label='Cleanup Venvs')
-        clean_button.Enable(agree_checkbox.IsChecked())
+        clean_button = wx.Button(second_panel, label='⚠️ Cleanup Venvs')
 
         def on_clean_button_click(event):
             self.__clean_venvs()
@@ -211,11 +209,6 @@ class VenvCleanerFrame(wx.Frame):
 
         second_panel.SetSizer(second_sizer)
         control_sizer.Add(second_panel, flag=wx.EXPAND)
-
-        def on_agree_checkbox_click(event):
-            clean_button.Enable(event.IsChecked())
-
-        agree_checkbox.Bind(wx.EVT_CHECKBOX, on_agree_checkbox_click)
 
         self.control_panel.SetSizer(control_sizer)
         return self.control_panel
