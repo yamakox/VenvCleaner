@@ -4,17 +4,21 @@ A simple TUI/GUI tool for cleaning up old or unused Python virtual environments 
 
 ## How to Use
 
-The easiest way to run the TUI mode of Venv Cleaner is using [uvx](https://docs.astral.sh/uv/guides/tools/):
+The easiest way to run the **TUI mode** of Venv Cleaner is using [uvx](https://docs.astral.sh/uv/guides/tools/):
 
 ```bash
 uvx venvcleaner
 ```
 
-You can also run the GUI mode of Venv Cleaner:
+![TUI mode](https://raw.githubusercontent.com/yamakox/VenvCleaner/main/tui-mode.png)
+
+You can also run the **GUI mode** of Venv Cleaner:
 
 ```bash
 uvx --with wxpython venvcleaner
 ```
+
+![GUI mode](https://raw.githubusercontent.com/yamakox/VenvCleaner/main/gui-mode.png)
 
 You can specify a target directory:
 
@@ -22,7 +26,7 @@ You can specify a target directory:
 uvx venvcleaner /path/to/target-directory
 ```
 
-If you are using Linux, you will need to build wxPython via pip. Please see [Building wxPython for Linux via Pip](https://wxpython.org/blog/2017-08-17-builds-for-linux-with-pip/) and [wxWidgets for GTK installation](https://docs.wxwidgets.org/3.2/plat_gtk_install.html).
+If you are using Linux and want to use GUI mode, you will need to build wxPython via pip. Please see [Building wxPython for Linux via Pip](https://wxpython.org/blog/2017-08-17-builds-for-linux-with-pip/) and [wxWidgets for GTK installation](https://docs.wxwidgets.org/3.2/plat_gtk_install.html).
 
 Alternatively, on [some Linux systems](https://wxpython.org/pages/downloads/index.html), you can use the `-f` (`--find-links`) option to specify [the download URL of wxPython package](https://extras.wxpython.org/wxPython4/extras/linux/):
 
@@ -31,29 +35,30 @@ Alternatively, on [some Linux systems](https://wxpython.org/pages/downloads/inde
 uvx -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04 venvcleaner
 ```
 
-If you want to install to the persistent environment:
+If you want to install it into a persistent environment:
 
 ```bash
-uv tool install venvcleaner@latest
+uv tool install venvcleaner[gui]@latest
 
 # for Ubuntu 24.04
 uv tool install -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04 venvcleaner@latest
 
 # run Venv Cleaner
 venvcleaner
-```
 
-![screenshot](https://raw.githubusercontent.com/yamakox/VenvCleaner/main/screenshot.png)
+# run the TUI mode of Venv Cleaner
+venvcleaner --no-gui
+```
 
 ## Features
 
 - Scans the target directory for virtual environments (`.venv` directories containing a `pyvenv.cfg` file).
-- In TUI mode, you can change the target directory by editing the path field and pressing Enter, or refresh the scan with the __Refresh__ button.
-- In GUI mode, you can change or refresh the target directory with the __Select...__ or __Refresh__ buttons.
+- In TUI mode, you can change the target directory by editing the path field and pressing Enter, or refresh the scan with the **Refresh** button.
+- In GUI mode, you can change or refresh the target directory with the **Select...** or **Refresh** buttons.
 - Choose which venvs to clean using the selection list.
-  - __Select All__ selects all detected venvs.
-  - __Select None__ clears the selection.
-- __Copy Paths__ (GUI) copies the paths of selected venvs to your clipboard.
+  - **Select All** selects all detected venvs.
+  - **Select None** clears the selection.
+- **Copy Paths** (GUI) copies the paths of selected venvs to your clipboard.
 You can paste them into a terminal to run shell commands manually. For example:
 
 ```bash
@@ -61,7 +66,7 @@ ls /path/to/project-1/.venv "/path/to/project 2/.venv"
 rm -r /path/to/project-1/.venv "/path/to/project 2/.venv"
 ```
 
-- __Dump Paths__ (TUI) prints the full paths of selected venvs to stdout, one per line, and exits.
+- **Dump Paths** (TUI) prints the full paths of selected venvs to stdout, one per line, and exits.
 This is useful on SSH or other remote sessions where clipboard access is unavailable. For example:
 
 ```bash
@@ -70,7 +75,7 @@ venvcleaner --no-gui /path/to/scan  # select venvs, then press Dump Paths
 # /path/to/project-2/.venv
 ```
 
-- __Cleanup Venvs__ deletes the selected venv directories.
+- **Cleanup Venvs** deletes the selected venv directories.
 
 ## TUI Key Bindings
 
