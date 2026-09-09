@@ -1,27 +1,28 @@
+import os
 import shutil
 from pathlib import Path
 
+from dotenv import load_dotenv
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.message import Message
 from textual.screen import ModalScreen
-from textual.widgets import Button, Checkbox, DataTable, Footer, Header, Input, Label, Static
+from textual.widgets import Button, DataTable, Footer, Header, Input, Label, Static
 
 from .core import (
-    copy_text_to_clipboard,
     find_venvs_worker,
     format_size,
     format_status_text,
     logger,
-    quote_path,
     sort_venv_ids,
     timestamp_to_local_str,
 )
 from .version import version_number
 
 SORT_COLUMNS = ('Venv Name', 'Location', 'Size', 'Last Modified')
+ENV_FILE = Path.home() / '.config' / 'venvcleaner' / '.env'
 
 
 class VenvFound(Message):
@@ -42,6 +43,11 @@ class FindVenvsCompleted(Message):
 
 
 class ConfirmDialog(ModalScreen[bool]):
+    AUTO_FOCUS = '#cancel'
+    BINDINGS = [
+        Binding('escape', 'dismiss', 'Close'),
+    ]
+
     def __init__(self, message: str) -> None:
         self.message = message
         super().__init__()
@@ -50,40 +56,38 @@ class ConfirmDialog(ModalScreen[bool]):
         with Vertical(id='confirm-dialog'):
             yield Static(self.message)
             with Horizontal():
-                yield Button('Yes', id='yes', variant='primary')
-                yield Button('No', id='no')
+                yield Button('OK', id='ok')
+                yield Button('Cancel', id='cancel', variant='primary')
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        self.dismiss(event.button.id == 'yes')
-
-    def key_y(self) -> None:
-        self.dismiss(True)
-
-    def key_n(self) -> None:
-        self.dismiss(False)
+        event.stop()
+        self.dismiss(event.button.id == 'ok')
 
 
 class InfoDialog(ModalScreen[None]):
-    def __init__(self, title: str, message: str) -> None:
-        self.title = title
-        self.message = message
+    AUTO_FOCUS = '#ok'
+    BINDINGS = [
+        Binding('escape', 'dismiss', 'Close'),
+    ]
+
+    def __init__(self, dialog_title: str, message: str) -> None:
         super().__init__()
+        self._dialog_title = dialog_title
+        self.message = message
 
     def compose(self) -> ComposeResult:
         with Vertical(id='info-dialog'):
-            yield Static(self.title, classes='dialog-title')
+            yield Static(self._dialog_title, classes='dialog-title')
             yield Static(self.message)
             yield Button('OK', id='ok', variant='primary')
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == 'ok':
+            event.stop()
             self.dismiss(None)
 
-    def key_enter(self) -> None:
-        self.dismiss(None)
 
-
-class VenvCleanerApp(App[None]):
+class VenvCleanerApp(App[list[Path] | None]):
     TITLE = f'venv cleaner v{version_number}'
     BINDINGS = [
         Binding('escape', 'quit', 'Quit'),
@@ -91,7 +95,7 @@ class VenvCleanerApp(App[None]):
         Binding('a', 'select_all', 'Select All', show=False),
         Binding('n', 'select_none', 'Select None', show=False),
         Binding('r', 'refresh', 'Refresh', show=False),
-        Binding('c', 'copy_paths', 'Copy Paths', show=False),
+        Binding('d', 'dump_paths', 'Dump Paths', show=False),
         Binding('space', 'toggle_row', 'Toggle', show=False),
     ]
 
@@ -112,6 +116,7 @@ class VenvCleanerApp(App[None]):
         dock: top;
         height: 3;
         padding: 0 1;
+        align: center middle;
     }
 
     #path-row Label {
@@ -124,6 +129,7 @@ class VenvCleanerApp(App[None]):
     #dir-path-input {
         width: 1fr;
         min-width: 1;
+        height: 3;
     }
 
     #refresh-button {
@@ -134,6 +140,7 @@ class VenvCleanerApp(App[None]):
     #bottom-panel {
         dock: bottom;
         height: auto;
+        margin-bottom: 1;
     }
 
     #status-label {
@@ -145,11 +152,32 @@ class VenvCleanerApp(App[None]):
     #control-row {
         height: 3;
         padding: 0 1;
+        align: center middle;
     }
 
-    #cleanup-row {
+    #control-spacer {
+        width: 1fr;
+        min-width: 1;
+    }
+
+    #select-buttons {
+        width: auto;
         height: 3;
-        padding: 0 1;
+    }
+
+    #action-buttons {
+        width: auto;
+        height: 3;
+    }
+
+    #select-buttons Button,
+    #action-buttons Button {
+        margin-right: 1;
+    }
+
+    #select-buttons Button:last-child,
+    #action-buttons Button:last-child {
+        margin-right: 0;
     }
 
     #venv-table {
@@ -163,6 +191,16 @@ class VenvCleanerApp(App[None]):
         height: auto;
         border: thick $primary;
         background: $surface;
+    }
+
+    #confirm-dialog Horizontal {
+        height: auto;
+        width: 1fr;
+    }
+
+    ConfirmDialog,
+    InfoDialog {
+        align: center middle;
     }
 
     .dialog-title {
@@ -192,25 +230,25 @@ class VenvCleanerApp(App[None]):
         with Vertical(id='bottom-panel'):
             yield Static('Venv Cleaner', id='status-label')
             with Horizontal(id='control-row'):
-                yield Button('Select All', id='select-all-button')
-                yield Button('Select None', id='select-none-button')
-                yield Button('Copy Paths', id='copy-paths-button')
-            with Horizontal(id='cleanup-row'):
-                yield Checkbox('I agree to take responsibility for my actions.', id='agree-checkbox')
-                yield Button('Cleanup Venvs', id='cleanup-button', variant='error', disabled=True)
+                with Horizontal(id='select-buttons'):
+                    yield Button('Select All', id='select-all-button')
+                    yield Button('Select None', id='select-none-button')
+                yield Static(id='control-spacer')
+                with Horizontal(id='action-buttons'):
+                    yield Button('Dump Paths', id='dump-paths-button')
+                    yield Button('Cleanup Venvs', id='cleanup-button', variant='error')
         yield Footer()
 
     def on_mount(self) -> None:
-        #self.theme = 'textual-light'
+        theme = os.environ.get('TEXTUAL_THEME')
+        if theme:
+            self.theme = theme
         table = self.query_one('#venv-table', DataTable)
         table.add_columns('Sel', *SORT_COLUMNS)
         self._start_find_venvs()
 
     def _set_status_text(self, text: str) -> None:
         self.query_one('#status-label', Static).update(text)
-
-    def _get_cleanup_button(self) -> Button:
-        return self.query_one('#cleanup-button', Button)
 
     def _start_find_venvs(self) -> None:
         self._stop_scan = True
@@ -368,10 +406,6 @@ class VenvCleanerApp(App[None]):
         event.input.value = str(self.dir_path)
         self._start_find_venvs()
 
-    def on_checkbox_changed(self, event: Checkbox.Changed) -> None:
-        if event.checkbox.id == 'agree-checkbox':
-            self._get_cleanup_button().disabled = not event.value
-
     def on_button_pressed(self, event: Button.Pressed) -> None:
         button_id = event.button.id
         if button_id == 'refresh-button':
@@ -380,8 +414,8 @@ class VenvCleanerApp(App[None]):
             self.action_select_all()
         elif button_id == 'select-none-button':
             self.action_select_none()
-        elif button_id == 'copy-paths-button':
-            self.action_copy_paths()
+        elif button_id == 'dump-paths-button':
+            self.action_dump_paths()
         elif button_id == 'cleanup-button':
             self.run_worker(self._clean_venvs(), exclusive=True)
 
@@ -396,25 +430,17 @@ class VenvCleanerApp(App[None]):
     def action_refresh(self) -> None:
         self._start_find_venvs()
 
-    def action_copy_paths(self) -> None:
+    def action_dump_paths(self) -> None:
         if not self.selected_ids:
-            self.push_screen(InfoDialog('Warning', 'Please select at least one venv to copy the paths.'))
+            self._set_status_text('Please select at least one venv to dump paths.')
             return
-        paths = []
-        for item_id in sorted(self.selected_ids):
-            venv_info = self.venvs_cache[item_id]
-            paths.append(quote_path(venv_info['path']))
-        if copy_text_to_clipboard(' '.join(paths)):
-            self.push_screen(
-                InfoDialog('Success', f'{len(paths)} venv path(s) have been copied to the clipboard.')
-            )
-        else:
-            self.push_screen(InfoDialog('Error', 'Failed to open the clipboard. Please try again.'))
+        paths = [self.venvs_cache[item_id]['path'] for item_id in sorted(self.selected_ids)]
+        self.exit(paths)
 
     async def _clean_venvs(self) -> None:
         selected_count = len(self.selected_ids)
         if selected_count == 0:
-            self.push_screen(InfoDialog('Warning', 'Please select at least one venv to clean up.'))
+            await self.push_screen_wait(InfoDialog('Warning', 'Please select at least one venv to clean up.'))
             return
         confirmed = await self.push_screen_wait(
             ConfirmDialog(f'Are you sure you want to clean up {selected_count} venv(s)?')
@@ -426,30 +452,31 @@ class VenvCleanerApp(App[None]):
         error_count = 0
         sorted_ids = sort_venv_ids(self.venvs_cache, self.sort_column, self.sort_ascending)
         remaining_ids: list[int] = []
-        for item_id in sorted_ids:
-            venv_info = self.venvs_cache[item_id]
-            venv_path = venv_info['path']
-            if item_id not in self.selected_ids:
-                remaining_ids.append(item_id)
-                continue
-            try:
-                logger.info(f'Cleaned up: {venv_path}')
-                shutil.rmtree(venv_path)
-                cleaned_count += 1
-                self.total_size -= venv_info['size']
-                del self.venvs_cache[item_id]
-                if venv_path in self.venvs_cache_inv:
-                    del self.venvs_cache_inv[venv_path]
-            except Exception:
-                error_count += 1
-                logger.error(f'Failed to clean up: {venv_path}')
-                remaining_ids.append(item_id)
+        with self.suspend():
+            for item_id in sorted_ids:
+                venv_info = self.venvs_cache[item_id]
+                venv_path = venv_info['path']
+                if item_id not in self.selected_ids:
+                    remaining_ids.append(item_id)
+                    continue
+                try:
+                    logger.info(f'Cleaned up: {venv_path}')
+                    shutil.rmtree(venv_path)
+                    cleaned_count += 1
+                    self.total_size -= venv_info['size']
+                    del self.venvs_cache[item_id]
+                    if venv_path in self.venvs_cache_inv:
+                        del self.venvs_cache_inv[venv_path]
+                except Exception:
+                    error_count += 1
+                    logger.error(f'Failed to clean up: {venv_path}')
+                    remaining_ids.append(item_id)
         self.selected_ids = {item_id for item_id in remaining_ids if item_id in self.venvs_cache}
         self._refresh_table_rows()
         count = len(self.venvs_cache)
         self._set_status_text(f'{count} venv(s) remaining. Total size: {format_size(self.total_size)}')
         if error_count > 0:
-            self.push_screen(
+            await self.push_screen_wait(
                 InfoDialog(
                     'Error',
                     (
@@ -459,12 +486,16 @@ class VenvCleanerApp(App[None]):
                 )
             )
         else:
-            self.push_screen(InfoDialog('Success', f'Cleaned up {cleaned_count} venv(s).'))
+            await self.push_screen_wait(InfoDialog('Success', f'Cleaned up {cleaned_count} venv(s).'))
 
     def on_unmount(self) -> None:
         self._stop_scan = True
 
 
 def main(dir_path: str | Path) -> None:
+    load_dotenv(ENV_FILE)
     app = VenvCleanerApp(dir_path)
-    app.run()
+    paths = app.run()
+    if paths:
+        for path in paths:
+            print(path)

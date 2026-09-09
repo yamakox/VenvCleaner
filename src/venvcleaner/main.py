@@ -21,15 +21,11 @@ def determineGUImode():
 @click.option('--version', is_flag=True, help='Show the version of Venv Cleaner.')
 @click.option('--no-gui', default=False, is_flag=True, help='Run Venv Cleaner in the TUI mode.')
 def main(dir_path, version, no_gui):
-    print(f'{no_gui=} {determineGUImode()=}')
     if version:
         click.echo(f'Venv Cleaner v{version_number}')
         return
     if not no_gui and determineGUImode():
-        from . import gui
-
-        gui.main(dir_path)
+        from . import gui as module
     else:
-        from . import tui
-
-        tui.main(dir_path)
+        from . import tui as module
+    module.main(dir_path)

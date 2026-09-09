@@ -1,7 +1,5 @@
 import logging
 import os
-import subprocess
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Protocol
@@ -101,25 +99,6 @@ def find_venvs_worker(dir_path: Path, callbacks: FindVenvsCallbacks) -> None:
     except Exception as e:
         logger.error(f'Failed to find venvs: {e}')
         callbacks.on_find_venvs_completed()
-
-
-def copy_text_to_clipboard(text: str) -> bool:
-    try:
-        if sys.platform == 'darwin':
-            subprocess.run(['pbcopy'], input=text.encode(), check=True)
-            return True
-        if sys.platform == 'win32':
-            subprocess.run(['clip'], input=text.encode('utf-16le'), check=True)
-            return True
-        for cmd in (['xclip', '-selection', 'clipboard'], ['xsel', '--clipboard', '--input']):
-            try:
-                subprocess.run(cmd, input=text.encode(), check=True)
-                return True
-            except (FileNotFoundError, subprocess.CalledProcessError):
-                continue
-        return False
-    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
-        return False
 
 
 def format_status_text(count: int, total_size: int, prefix: str = 'Found') -> str:

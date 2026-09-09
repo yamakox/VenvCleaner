@@ -4,16 +4,16 @@ A simple TUI/GUI tool for cleaning up old or unused Python virtual environments 
 
 ## How to Use
 
-The easiest way to run TUI mode of Venv Cleaner is using [uvx](https://docs.astral.sh/uv/guides/tools/):
+The easiest way to run the TUI mode of Venv Cleaner is using [uvx](https://docs.astral.sh/uv/guides/tools/):
 
 ```bash
 uvx venvcleaner
 ```
 
-You can also run GUI mode of Venv Cleaner:
+You can also run the GUI mode of Venv Cleaner:
 
 ```bash
-uvx venvcleaner[gui]
+uvx --with wxpython venvcleaner
 ```
 
 You can specify a target directory:
@@ -53,7 +53,7 @@ venvcleaner
 - Choose which venvs to clean using the selection list.
   - __Select All__ selects all detected venvs.
   - __Select None__ clears the selection.
-- __Copy Paths__ copies the paths of selected venvs to your clipboard.
+- __Copy Paths__ (GUI) copies the paths of selected venvs to your clipboard.
 You can paste them into a terminal to run shell commands manually. For example:
 
 ```bash
@@ -61,26 +61,53 @@ ls /path/to/project-1/.venv "/path/to/project 2/.venv"
 rm -r /path/to/project-1/.venv "/path/to/project 2/.venv"
 ```
 
-- __Cleanup Venvs__ deletes the selected venv directories.
-Before using this button, you must check the agreement box:
+- __Dump Paths__ (TUI) prints the full paths of selected venvs to stdout, one per line, and exits.
+This is useful on SSH or other remote sessions where clipboard access is unavailable. For example:
 
-> I agree to take responsibility for my actions.
+```bash
+venvcleaner --no-gui /path/to/scan  # select venvs, then press Dump Paths
+# /path/to/project-1/.venv
+# /path/to/project-2/.venv
+```
+
+- __Cleanup Venvs__ deletes the selected venv directories.
 
 ## TUI Key Bindings
 
-| Key | Action |
+|Key|Action|
 |---|---|
-| `↑` / `↓` | Move within the venv list |
-| `Space` | Toggle selection of the current row |
-| `Tab` / `Shift+Tab` | Move focus between widgets |
-| `Enter` | Activate the focused button / confirm path input |
-| `a` | Select All |
-| `n` | Select None |
-| `r` | Refresh |
-| `c` | Copy Paths |
-| `Esc` / `q` | Quit |
+|`↑` / `↓`|Move within the venv list|
+|`Space`|Toggle selection of the current row|
+|`Tab` / `Shift+Tab`|Move focus between widgets|
+|`Enter`|Activate the focused button / confirm path input|
+|`a`|Select All|
+|`n`|Select None|
+|`r`|Refresh|
+|`d`|Dump Paths|
+|`Esc` / `q`|Quit|
 
-In modal dialogs, press `y` / `n` to confirm or cancel, or use the buttons.
+In modal dialogs, press `Esc` to close, or use the buttons.
+
+## Environment Variables
+
+TUI mode reads optional settings from:
+
+```text
+~/.config/venvcleaner/.env
+```
+
+|Variable|Description|
+|---|---|
+|`TEXTUAL_THEME`|Textual theme name (for example `textual-light`, `textual-dark`, or `ansi-dark`). If unset or empty, the Textual default theme is used.|
+
+Example:
+
+```bash
+mkdir -p ~/.config/venvcleaner
+echo 'TEXTUAL_THEME=textual-light' > ~/.config/venvcleaner/.env
+```
+
+You can also set `TEXTUAL_THEME` in your shell environment. Existing environment variables take precedence over values in `.env`.
 
 ## License
 
