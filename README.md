@@ -4,7 +4,7 @@ A simple TUI/GUI tool for cleaning up old or unused Python virtual environments 
 
 ## How to Use
 
-The easiest way to run the **TUI mode** of Venv Cleaner is using [uvx](https://docs.astral.sh/uv/guides/tools/):
+The easiest way to run in **TUI mode** is using [uvx](https://docs.astral.sh/uv/guides/tools/):
 
 ```bash
 uvx venvcleaner
@@ -12,7 +12,7 @@ uvx venvcleaner
 
 ![TUI mode](https://raw.githubusercontent.com/yamakox/VenvCleaner/main/tui-mode.png)
 
-You can also run the **GUI mode** of Venv Cleaner:
+You can also run in **GUI mode**:
 
 ```bash
 uvx --with wxpython venvcleaner
@@ -26,6 +26,15 @@ You can specify a target directory:
 uvx venvcleaner /path/to/target-directory
 ```
 
+### TUI or GUI?
+
+Venv Cleaner chooses the UI as follows:
+
+- **GUI mode** when wxPython is installed, `--no-gui` is not set, and a display is available.
+- **TUI mode** otherwise (including when you pass `--no-gui`).
+
+On Linux, if both `DISPLAY` and `WAYLAND_DISPLAY` are unset (typical for SSH sessions without display forwarding), Venv Cleaner runs in **TUI mode even when wxPython is installed**. You can also force TUI mode with `--no-gui` on any platform.
+
 ### Using GUI mode on Linux
 
 If you want to use GUI mode on Linux, you will need to build wxPython via pip. Please see [Building wxPython for Linux via Pip](https://wxpython.org/blog/2017-08-17-builds-for-linux-with-pip/) and [wxWidgets for GTK installation](https://docs.wxwidgets.org/3.2/plat_gtk_install.html).
@@ -34,32 +43,37 @@ Alternatively, on [some Linux systems](https://wxpython.org/pages/downloads/inde
 
 ```bash
 # for Ubuntu 24.04
-uvx -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04 venvcleaner
+uvx -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04 \
+    --with wxpython==4.2.5 venvcleaner
 ```
 
-If you want to install it into a persistent environment:
+### Installing into a Persistent Environment
+
+If you want to install Venv Cleaner into a persistent environment:
 
 ```bash
-uv tool install venvcleaner[gui]@latest
+uv tool install "venvcleaner[gui]@latest"
 
 # for Ubuntu 24.04
-uv tool install -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04 venvcleaner@latest
+uv tool install -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04 \
+    --with wxpython==4.2.5 venvcleaner@latest
 
-# run Venv Cleaner
+# run Venv Cleaner (GUI when available, otherwise TUI)
 venvcleaner
 
-# run the TUI mode of Venv Cleaner
+# force TUI mode
 venvcleaner --no-gui
 ```
 
 ## Features
 
-- Scans the target directory for virtual environments (`.venv` directories containing a `pyvenv.cfg` file).
+- Scans the target directory recursively for virtual environments (directories containing a `pyvenv.cfg` file).
 - In TUI mode, you can change the target directory by editing the path field and pressing Enter, or refresh the scan with the **Refresh** button.
 - In GUI mode, you can change or refresh the target directory with the **Select...** or **Refresh** buttons.
 - Choose which venvs to clean using the selection list.
   - **Select All** selects all detected venvs.
   - **Select None** clears the selection.
+  - In TUI mode, press **Space** to toggle the current row. In GUI mode, use the multi-select list.
 - **Copy Paths** (GUI) copies the paths of selected venvs to your clipboard.
 You can paste them into a terminal to run shell commands manually. For example:
 
@@ -77,7 +91,7 @@ venvcleaner --no-gui /path/to/scan  # select venvs, then press Dump Paths
 # /path/to/project-2/.venv
 ```
 
-- **Cleanup Venvs** deletes the selected venv directories.
+- **Cleanup Venvs** deletes the selected venv directories. In TUI mode, cleanup progress is briefly printed to the terminal, then the TUI resumes.
 
 ## TUI Key Bindings
 
@@ -93,7 +107,7 @@ venvcleaner --no-gui /path/to/scan  # select venvs, then press Dump Paths
 |`d`|Dump Paths|
 |`Esc` / `q`|Quit|
 
-In modal dialogs, press `Esc` to close, or use the buttons.
+In modal dialogs, press `Esc` to close, or use the buttons. Click a column header to sort the list.
 
 ## Environment Variables
 
