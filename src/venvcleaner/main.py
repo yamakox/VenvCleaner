@@ -10,7 +10,7 @@ def determineGUImode():
     if find_spec('wx') is None:
         return False
     if sys.platform == 'linux':
-        if os.environ.get('DISPLAY') is None:
+        if not os.environ.get('DISPLAY') and not os.environ.get('WAYLAND_DISPLAY'):
             return False
     return True
 
